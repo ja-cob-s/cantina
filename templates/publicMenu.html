@@ -13,7 +13,6 @@
             <div class="jumbotron jumbotron-fluid">
                 <div class="container">
                     <h1 class="display-4">Cantina De Santiago</h1>
-                    <p class="lead"><a href={{ url_for('newMenuItem') }}>Create New Item</a></p>
                 </div>
             </div>
 
@@ -53,10 +52,6 @@
                               <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
                               <p class="card-text">{{i.price}}</p>
                             </div>
-                            <div class="card-footer">
-                              <a href={{ url_for('editMenuItem', menu_id=i.id) }} class="btn btn-primary btn-sm">Edit</a>
-                              <a href={{ url_for('deleteMenuItem', menu_id=i.id) }} class="btn btn-danger btn-sm">Delete</a>
-                            </div>
                         </div>
 
                     {% endif %}
@@ -73,10 +68,6 @@
                             <div class="card-body">
                               <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
                               <p class="card-text">{{i.price}}</p>
-                            </div>
-                            <div class="card-footer">
-                              <a href={{ url_for('editMenuItem', menu_id=i.id) }} class="btn btn-primary btn-sm">Edit</a>
-                              <a href={{ url_for('deleteMenuItem', menu_id=i.id) }} class="btn btn-danger btn-sm">Delete</a>
                             </div>
                         </div>
 
@@ -95,10 +86,6 @@
                               <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
                               <p class="card-text">{{i.price}}</p>
                             </div>
-                            <div class="card-footer">
-                              <a href={{ url_for('editMenuItem', menu_id=i.id) }} class="btn btn-primary btn-sm">Edit</a>
-                              <a href={{ url_for('deleteMenuItem', menu_id=i.id) }} class="btn btn-danger btn-sm">Delete</a>
-                            </div>
                         </div>
 
                     {% endif %}
@@ -115,10 +102,6 @@
                             <div class="card-body">
                               <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
                               <p class="card-text">{{i.price}}</p>
-                            </div>
-                            <div class="card-footer">
-                              <a href={{ url_for('editMenuItem', menu_id=i.id) }} class="btn btn-primary btn-sm">Edit</a>
-                              <a href={{ url_for('deleteMenuItem', menu_id=i.id) }} class="btn btn-danger btn-sm">Delete</a>
                             </div>
                         </div>
 

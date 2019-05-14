@@ -1,13 +1,21 @@
 #!/usr/bin/env python
 # Created by Jacob Schaible
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for
+from flask import flash, jsonify, make_response
+from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, User, MenuItem, Order, OrderItem
+from flask_login import login_user, logout_user, current_user, login_required, LoginManager
+from werkzeug.urls import url_parse
+from forms import LoginForm, RegistrationForm
+import json
 
 
 app = Flask(__name__)
+login = LoginManager(app)
+login.login_view = 'login'
 
 
 def connect():
@@ -19,35 +27,64 @@ def connect():
     return session
 
 
-#########################
-# User Helper Functions #
-#########################
-def createUser(login_session):
-    """ Creates a new user in the database"""
-    session = connect()
-    newUser = User(name=login_session['username'], email=login_session[
-                   'email'], picture=login_session['picture'])
-    session.add(newUser)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def getUserInfo(user_id):
-    """ Returns user object or None if user not found"""
+#################################
+# User Authentication Functions #
+#################################
+@login.user_loader
+def load_user(user_id):
     session = connect()
     user = session.query(User).filter_by(id=user_id).one_or_none()
     return user
 
 
 def getUserID(email):
-    """ Returns user.id of the user or None if user not found"""
     session = connect()
     user = session.query(User).filter_by(email=email).one_or_none()
     if user is None:
         return None
     else:
         return user.id
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def showLogin():
+    session = connect()
+    if current_user.is_authenticated:
+        return redirect(url_for('showMenu'))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = session.query(User).filter_by(name=form.username.data).first()
+        if user is None or not user.check_password(form.password.data):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user, remember=form.remember_me.data)
+        next_page = request.args.get('next')
+        if not next_page or url_parse(next_page).netloc != '':
+            next_page = url_for('showMenu')
+        return redirect(next_page)
+    return render_template('login.html', title='Sign In', form=form)
+
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('showMenu'))
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    session = connect()
+    if current_user.is_authenticated:
+        return redirect(url_for('showMenu'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(name=form.username.data, email=form.email.data, admin=0)
+        user.set_password(form.password.data)
+        session.add(user)
+        session.commit()
+        flash('Congratulations, you are now a registered user!')
+        return redirect(url_for('showLogin'))
+    return render_template('register.html', title='Register', form=form)
 
 
 #########################
@@ -78,7 +115,10 @@ def showMenu():
     """ Display main menu page"""
     session = connect()
     items = session.query(MenuItem).all()
-    return render_template('menu.html', items=items)
+    if current_user.admin:
+        return render_template('menu.html', items=items)
+    else:
+        return render_template('publicMenu.html', items=items)
 
 
 @app.route('/menu/new', methods=['GET', 'POST'])
