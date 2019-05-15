@@ -37,7 +37,7 @@ def load_user(user_id):
     return user
 
 
-def getUserID(email):
+def get_user_id(email):
     session = connect()
     user = session.query(User).filter_by(email=email).one_or_none()
     if user is None:
@@ -47,20 +47,20 @@ def getUserID(email):
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def showLogin():
+def show_login():
     session = connect()
     if current_user.is_authenticated:
-        return redirect(url_for('showMenu'))
+        return redirect(url_for('show_menu'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = session.query(User).filter_by(name=form.username.data).first()
+        user = session.query(User).filter_by(email=form.email.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid username or password')
-            return redirect(url_for('login'))
+            flash('Invalid email or password')
+            return redirect(url_for('show_login'))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('showMenu')
+            next_page = url_for('show_menu')
         return redirect(next_page)
     return render_template('login.html', title='Sign In', form=form)
 
@@ -68,14 +68,14 @@ def showLogin():
 @app.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('showMenu'))
+    return redirect(url_for('show_menu'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     session = connect()
     if current_user.is_authenticated:
-        return redirect(url_for('showMenu'))
+        return redirect(url_for('show_menu'))
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(name=form.username.data, email=form.email.data, admin=0)
@@ -83,15 +83,15 @@ def register():
         session.add(user)
         session.commit()
         flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('showLogin'))
+        return redirect(url_for('show_login'))
     return render_template('register.html', title='Register', form=form)
 
 
-#########################
-# JSON Helper Functions #
-#########################
+###########################
+# JSON Endpoint Functions #
+###########################
 @app.route('/menu/JSON')
-def restaurantMenuJSON():
+def restaurant_menu_json():
     """ Returns list of menu items in JSON format"""
     session = connect()
     items = session.query(MenuItem).all()
@@ -99,30 +99,40 @@ def restaurantMenuJSON():
 
 
 @app.route('/menu/<int:menu_id>/JSON')
-def menuItemJSON(menu_id):
+def menu_item_json(menu_id):
     """ Returns one menu item in JSON format"""
     session = connect()
     item = session.query(MenuItem).filter_by(id = menu_id).one()
     return jsonify(MenuItem=item.serialize)
 
+######################
+# Ordering Functions #
+######################
+def add_to_order():
+    return None
 
-#########################
-# CRUD Helper Functions #
-#########################
+
+##################
+# CRUD Functions #
+##################
 @app.route('/')
 @app.route('/menu')
-def showMenu():
+def show_menu():
     """ Display main menu page"""
     session = connect()
     items = session.query(MenuItem).all()
-    if current_user.admin:
-        return render_template('menu.html', items=items)
-    else:
+    try:
+        if current_user.admin:
+            return render_template('menu.html', items=items)
+        else:
+            return render_template('publicMenu.html', items=items)
+    except AttributeError:
         return render_template('publicMenu.html', items=items)
 
 
 @app.route('/menu/new', methods=['GET', 'POST'])
-def newMenuItem():
+@login_required
+def new_menu_item():
     """ Display page to create new menu item"""
     session = connect()
     if request.method == 'POST':
@@ -131,13 +141,14 @@ def newMenuItem():
         session.add(newItem)
         session.commit()
         flash("New menu item '%s' created!" % newItem.name)
-        return redirect(url_for('showMenu'))
+        return redirect(url_for('show_menu'))
     else:
         return render_template('newMenuItem.html')
 
 
 @app.route('/menu/<int:menu_id>/edit', methods=['GET', 'POST'])
-def editMenuItem(menu_id):
+@login_required
+def edit_menu_item(menu_id):
     """ Display page to edit an existing menu item"""
     session = connect()
     item = session.query(MenuItem).filter_by(id = menu_id).one()
@@ -156,13 +167,14 @@ def editMenuItem(menu_id):
             flash("Item '%s' course changed to %s!" % (item.name, item.course))
         session.add(item)
         session.commit()
-        return redirect(url_for('showMenu'))
+        return redirect(url_for('show_menu'))
     else:
         return render_template('editMenuItem.html', menu_id = menu_id, item=item)
 
 
 @app.route('/menu/<int:menu_id>/delete', methods=['GET', 'POST'])
-def deleteMenuItem(menu_id):
+@login_required
+def delete_menu_item(menu_id):
     """ Display page to delete an existing menu item"""
     session = connect()
     item = session.query(MenuItem).filter_by(id = menu_id).one()
@@ -170,7 +182,7 @@ def deleteMenuItem(menu_id):
         session.delete(item)
         session.commit()
         flash("Item '%s' deleted!" % item.name) 
-        return redirect(url_for('showMenu'))
+        return redirect(url_for('show_menu'))
     else:
         return render_template('deleteMenuItem.html', menu_id = menu_id, item=item)
 

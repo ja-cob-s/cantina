@@ -1,118 +1,113 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <!-- Required meta tags -->
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
-    </head>
-    <body>
+{% extends "base.html" %}
+{% block content %}
 
-            <div class="jumbotron jumbotron-fluid">
-                <div class="container">
-                    <h1 class="display-4">Cantina De Santiago</h1>
-                </div>
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">Cantina De Santiago</h1>
+        </div>
+    </div>
+
+    <div class = 'pane'>        
+        
+        {% with messages = get_flashed_messages() %}
+        
+            {% if messages %}
+            <div class="alert alert-primary" role="alert">
+                <ul>
+                {% for message in messages %}
+                <li><strong>{{message}}</strong></li>
+                {% endfor %}
+                </ul>
+            </div> 
+            {% endif %}
+            
+        {% endwith %}
+            
+        {% if items %}
+            
+            <h2>Appetizers</h2>
+            <div class="card-columns">
+            {% for i in items %}
+                {% if i.course == 'Appetizer' %} 
+
+                    <div class="card border-dark mb-3" style="max-width: 18rem;">
+                        <div class="card-header">{{i.name}}</div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
+                            <p class="card-text">{{i.price}}</p>
+                        </div>
+                        <div class="card-footer" align="right">
+                            <a href={{ url_for('show_menu', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
+                        </div>
+                    </div>
+
+                {% endif %}
+            {% endfor %}
             </div>
 
-        <div class = 'pane'>
+            <h2>Entrees</h2>
+            <div class="card-columns">
+            {% for i in items %}
+                {% if i.course == 'Entree' %}
 
-            {% if current_user.is_anonymous %}
-                <a class="nav-link" href='{{url_for('showLogin')}}'>Sign In</a>
-            {% else %}
-                <a class="nav-link" href='{{url_for('logout')}}'>Sign Out</a>
-            {% endif %}
-            
-            
-            {% with messages = get_flashed_messages() %}
-            
-                {% if messages %}
-                <div class="alert alert-primary" role="alert">
-                    <ul>
-                    {% for message in messages %}
-                    <li><strong>{{message}}</strong></li>
-                    {% endfor %}
-                    </ul>
-                </div> 
+                    <div class="card border-dark mb-3" style="max-width: 18rem;">
+                        <div class="card-header">{{i.name}}</div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
+                            <p class="card-text">{{i.price}}</p>
+                        </div>
+                        <div class="card-footer" align="right">
+                            <a href={{ url_for('show_menu', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
+                        </div>
+                    </div>
+
                 {% endif %}
-                
-            {% endwith %}
-               
-            {% if items %}
-                
-                <h2>Appetizers</h2>
-                <div class="card-columns">
-                {% for i in items %}
-                    {% if i.course == 'Appetizer' %} 
+            {% endfor %}
+            </div>
 
-                        <div class="card border-dark mb-3" style="max-width: 18rem;">
-                            <div class="card-header">{{i.name}}</div>
-                            <div class="card-body">
-                              <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                              <p class="card-text">{{i.price}}</p>
-                            </div>
+            <h2>Desserts</h2>
+            <div class="card-columns">
+            {% for i in items %}
+                {% if i.course == 'Dessert' %} 
+
+                    <div class="card border-dark mb-3" style="max-width: 18rem;">
+                        <div class="card-header">{{i.name}}</div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
+                            <p class="card-text">{{i.price}}</p>
                         </div>
-
-                    {% endif %}
-                {% endfor %}
-                </div>
-
-                <h2>Entrees</h2>
-                <div class="card-columns">
-                {% for i in items %}
-                    {% if i.course == 'Entree' %}
-
-                        <div class="card border-dark mb-3" style="max-width: 18rem;">
-                            <div class="card-header">{{i.name}}</div>
-                            <div class="card-body">
-                              <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                              <p class="card-text">{{i.price}}</p>
-                            </div>
+                        <div class="card-footer" align="right">
+                            <a href={{ url_for('show_menu', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
                         </div>
+                    </div>
 
-                    {% endif %}
-                {% endfor %}
-                </div>
+                {% endif %}
+            {% endfor %}
+            </div>
 
-                <h2>Desserts</h2>
-                <div class="card-columns">
-                {% for i in items %}
-                    {% if i.course == 'Dessert' %} 
+            <h2>Drinks</h2>
+            <div class="card-columns">
+            {% for i in items %}
+                {% if i.course == 'Drink' %} 
 
-                        <div class="card border-dark mb-3" style="max-width: 18rem;">
-                            <div class="card-header">{{i.name}}</div>
-                            <div class="card-body">
-                              <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                              <p class="card-text">{{i.price}}</p>
-                            </div>
+                    <div class="card border-dark mb-3" style="max-width: 18rem;">
+                        <div class="card-header">{{i.name}}</div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
+                            <p class="card-text">{{i.price}}</p>
                         </div>
-
-                    {% endif %}
-                {% endfor %}
-                </div>
-
-                <h2>Drinks</h2>
-                <div class="card-columns">
-                {% for i in items %}
-                    {% if i.course == 'Drink' %} 
-
-                        <div class="card border-dark mb-3" style="max-width: 18rem;">
-                            <div class="card-header">{{i.name}}</div>
-                            <div class="card-body">
-                              <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                              <p class="card-text">{{i.price}}</p>
-                            </div>
+                        <div class="card-footer" align="right">
+                            <a href={{ url_for('show_menu', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
                         </div>
+                    </div>
 
-                    {% endif %}
-                {% endfor %}
-                </div>
+                {% endif %}
+            {% endfor %}
+            </div>
 
-            {% else %}
-                <p> You currently have no menu items. </p>
-            {% endif %}
-         </div>
-        
-    </body>
-</html>
+        {% else %}
+            <p> You currently have no menu items. </p>
+        {% endif %}
+        </div>
+
+{% endblock %}
