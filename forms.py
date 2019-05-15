@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
-from database_setup import Base,User
+from database_setup import Base, User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -25,7 +25,7 @@ class RegistrationForm(FlaskForm):
         """ Connect to database"""
         engine = create_engine('sqlite:///cantinadesantiago.db')
         Base.metadata.bind = engine
-        DBSession = sessionmaker(bind = engine)
+        DBSession = sessionmaker(bind=engine)
         session = DBSession()
         return session
 

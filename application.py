@@ -6,8 +6,9 @@ from flask import flash, jsonify, make_response
 from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, User, MenuItem, Order, OrderItem
-from flask_login import login_user, logout_user, current_user, login_required, LoginManager
+from database_setup import Base, User, MenuItem, Order, OrderItem, Cart
+from flask_login import login_user, logout_user, current_user
+from flask_login import login_required, LoginManager
 from werkzeug.urls import url_parse
 from forms import LoginForm, RegistrationForm
 import json
@@ -15,14 +16,14 @@ import json
 
 app = Flask(__name__)
 login = LoginManager(app)
-login.login_view = 'login'
+login.login_view = 'show_login'
 
 
 def connect():
     """ Connect to database"""
     engine = create_engine('sqlite:///cantinadesantiago.db')
     Base.metadata.bind = engine
-    DBSession = sessionmaker(bind = engine)
+    DBSession = sessionmaker(bind=engine)
     session = DBSession()
     return session
 
@@ -102,19 +103,40 @@ def restaurant_menu_json():
 def menu_item_json(menu_id):
     """ Returns one menu item in JSON format"""
     session = connect()
-    item = session.query(MenuItem).filter_by(id = menu_id).one()
+    item = session.query(MenuItem).filter_by(id=menu_id).one()
     return jsonify(MenuItem=item.serialize)
+
 
 ######################
 # Ordering Functions #
 ######################
-def add_to_order():
-    return None
+@app.route('/cart/add/<int:menu_id>')
+@login_required
+def add_to_cart(menu_id):
+    session = connect()
+    item = session.query(MenuItem).filter_by(id=menu_id).one()
+    try:
+        user_id = current_user.id
+    except AttributeError:
+        return "Error getting user ID"
+    cart_item = Cart(user_id=user_id, menu_item_id=menu_id, quantity=1)
+    session.add(cart_item)
+    session.commit()
+    flash("%s added to order!" % item.name)
+    return redirect(url_for('show_menu'))
 
 
-##################
-# CRUD Functions #
-##################
+@app.route('/cart')
+@login_required
+def show_cart():
+    session = connect()
+    items = session.query(Cart).all()
+    return render_template('cart.html', items=items)
+
+
+#######################
+# Menu CRUD Functions #
+#######################
 @app.route('/')
 @app.route('/menu')
 def show_menu():
@@ -136,8 +158,10 @@ def new_menu_item():
     """ Display page to create new menu item"""
     session = connect()
     if request.method == 'POST':
-        newItem = MenuItem(name = request.form['name'], course = request.form['course'],
-            description = request.form['description'], price = request.form['price'])
+        newItem = MenuItem(name=request.form['name'],
+                           course=request.form['course'],
+                           description=request.form['description'],
+                           price=request.form['price'])
         session.add(newItem)
         session.commit()
         flash("New menu item '%s' created!" % newItem.name)
@@ -151,7 +175,7 @@ def new_menu_item():
 def edit_menu_item(menu_id):
     """ Display page to edit an existing menu item"""
     session = connect()
-    item = session.query(MenuItem).filter_by(id = menu_id).one()
+    item = session.query(MenuItem).filter_by(id=menu_id).one()
     if request.method == 'POST':
         if request.form['name']:
             item.name = request.form['name']
@@ -169,7 +193,7 @@ def edit_menu_item(menu_id):
         session.commit()
         return redirect(url_for('show_menu'))
     else:
-        return render_template('editMenuItem.html', menu_id = menu_id, item=item)
+        return render_template('editMenuItem.html', menu_id=menu_id, item=item)
 
 
 @app.route('/menu/<int:menu_id>/delete', methods=['GET', 'POST'])
@@ -177,17 +201,18 @@ def edit_menu_item(menu_id):
 def delete_menu_item(menu_id):
     """ Display page to delete an existing menu item"""
     session = connect()
-    item = session.query(MenuItem).filter_by(id = menu_id).one()
+    item = session.query(MenuItem).filter_by(id=menu_id).one()
     if request.method == 'POST':
         session.delete(item)
         session.commit()
-        flash("Item '%s' deleted!" % item.name) 
+        flash("Item '%s' deleted!" % item.name)
         return redirect(url_for('show_menu'))
     else:
-        return render_template('deleteMenuItem.html', menu_id = menu_id, item=item)
+        return render_template('deleteMenuItem.html', menu_id=menu_id,
+                               item=item)
 
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
     app.debug = True
-    app.run(host = '0.0.0.0', port = 5000)
+    app.run(host='0.0.0.0', port=5000)

@@ -22,10 +22,8 @@ class User(UserMixin, Base):
     address = Column(String(250))
     admin = Column(Integer)
 
-
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
@@ -33,16 +31,15 @@ class User(UserMixin, Base):
 
 class MenuItem(Base):
     __tablename__ = 'menu_item'
-    id = Column(Integer, primary_key = True)
-    name = Column(String(80), nullable = False)
-    course = Column(String(250), nullable = False)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(80), nullable=False)
+    course = Column(String(250), nullable=False)
     description = Column(String(250))
-    price = Column(String(8), nullable = False)
-
+    price = Column(String(8), nullable=False)
 
     @property
     def serialize(self):
-        #Returns object data in easily serializeable format
+        # Returns object data in easily serializeable format
         return {
             'id': self.id,
             'name': self.name,
@@ -54,16 +51,15 @@ class MenuItem(Base):
 
 class Order(Base):
     __tablename__ = 'order'
-    id = Column(Integer, primary_key = True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship(User)
     order_time = Column(DateTime(timezone=True), server_default=func.now())
     delivery_time = Column(DateTime(timezone=True))
 
-
     @property
     def serialize(self):
-        #Returns object data in easily serializeable format
+        # Returns object data in easily serializeable format
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -74,24 +70,43 @@ class Order(Base):
 
 class OrderItem(Base):
     __tablename__ = 'order_item'
-    id = Column(Integer, primary_key= True)
+    id = Column(Integer, primary_key=True)
     order_id = Column(Integer, ForeignKey('order.id'))
     order = relationship(Order, backref=backref(
                             'order_item', cascade='all, delete'))
     menu_item_id = Column(Integer, ForeignKey('menu_item.id'))
     menu_item = relationship(MenuItem)
-    quantity = Column(Integer, nullable = False)
-
+    quantity = Column(Integer, nullable=False)
 
     @property
     def serialize(self):
-        #Returns object data in easily serializeable format
+        # Returns object data in easily serializeable format
         return {
             'id': self.id,
             'order_id': self.order_id,
             'menu_item_id': self.menu_item_id,
             'quantity': self.quantity,
-        } 
+        }
+
+
+class Cart(Base):
+    __tablename__ = 'cart'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    user = relationship(User)
+    menu_item_id = Column(Integer, ForeignKey('menu_item.id'))
+    menu_item = relationship(MenuItem)
+    quantity = Column(Integer, nullable=False)
+
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return {
+            'id': self.id,
+            'user_id': self.order_id,
+            'menu_item_id': self.menu_item_id,
+            'quantity': self.quantity,
+        }
 
 
 engine = create_engine('sqlite:///cantinadesantiago.db')
