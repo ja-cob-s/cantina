@@ -6,7 +6,8 @@ from flask import flash, jsonify, make_response
 from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, User, MenuItem, Order, OrderItem, Cart
+from database_setup import Base, User, MenuItem, Order, OrderItem
+from database_setup import Cart, CartView
 from flask_login import login_user, logout_user, current_user
 from flask_login import login_required, LoginManager
 from werkzeug.urls import url_parse
@@ -33,12 +34,14 @@ def connect():
 #################################
 @login.user_loader
 def load_user(user_id):
+    """ Get user matching given user ID"""
     session = connect()
     user = session.query(User).filter_by(id=user_id).one_or_none()
     return user
 
 
 def get_user_id(email):
+    """ Get user ID matching given email address"""
     session = connect()
     user = session.query(User).filter_by(email=email).one_or_none()
     if user is None:
@@ -49,6 +52,7 @@ def get_user_id(email):
 
 @app.route('/login', methods=['GET', 'POST'])
 def show_login():
+    """ Display the login page and validate credentials"""
     session = connect()
     if current_user.is_authenticated:
         return redirect(url_for('show_menu'))
@@ -68,12 +72,14 @@ def show_login():
 
 @app.route('/logout')
 def logout():
+    """ Logout the current user"""
     logout_user()
     return redirect(url_for('show_menu'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """ Sign up a new user"""
     session = connect()
     if current_user.is_authenticated:
         return redirect(url_for('show_menu'))
@@ -113,6 +119,9 @@ def menu_item_json(menu_id):
 @app.route('/cart/add/<int:menu_id>')
 @login_required
 def add_to_cart(menu_id):
+    """ Add a menu item to the user's cart
+        If item already exists in cart, increment the quantity
+    """
     session = connect()
     item = session.query(MenuItem).filter_by(id=menu_id).one()
     try:
@@ -120,18 +129,80 @@ def add_to_cart(menu_id):
     except AttributeError:
         return "Error getting user ID"
     cart_item = Cart(user_id=user_id, menu_item_id=menu_id, quantity=1)
+    existing_item = session.query(Cart).filter_by(
+        user_id=user_id, menu_item_id=menu_id).one_or_none()
+    if existing_item:
+        existing_item.quantity += 1
+        cart_item = existing_item
     session.add(cart_item)
     session.commit()
     flash("%s added to order!" % item.name)
     return redirect(url_for('show_menu'))
 
 
+@app.route('/cart/update/<int:menu_id>', methods=['GET', 'POST'])
+@login_required
+def update_cart(menu_id):
+    """ Update the quantity of a menu item in the user's cart"""
+    session = connect()
+    try:
+        user_id = current_user.id
+    except AttributeError:
+        return "Error getting user ID"
+    item = session.query(Cart).filter_by(
+        user_id=user_id, menu_item_id=menu_id).one()
+    if request.method == 'POST':
+        if request.form['quantity']:
+            item.quantity = request.form['quantity']
+            flash("Quantity updated")
+        session.add(item)
+        session.commit()
+    return redirect(url_for('show_cart'))
+
+
+@app.route('/cart/remove/<int:menu_id>')
+@login_required
+def remove_from_cart(menu_id):
+    """ Remove a menu item from the user's cart"""
+    session = connect()
+    try:
+        user_id = current_user.id
+    except AttributeError:
+        return "Error getting user ID"
+    item = session.query(Cart).filter_by(
+        user_id=user_id, menu_item_id=menu_id).one()
+    menu_item = session.query(MenuItem).filter_by(id=menu_id).one()
+    session.delete(item)
+    session.commit()
+    flash("%s removed from order!" % menu_item.name)
+    return redirect(url_for('show_cart'))
+
+
 @app.route('/cart')
 @login_required
 def show_cart():
+    """ Display the contents of the user's cart"""
     session = connect()
-    items = session.query(Cart).all()
-    return render_template('cart.html', items=items)
+    try:
+        user_id = current_user.id
+    except AttributeError:
+        return "Error getting user ID"
+    items = session.query(CartView).filter_by(user_id=user_id).all()
+    subtotal = 0.0
+    for item in items:
+        subtotal += float(item.price) * item.quantity
+    if subtotal > 0:
+        fee = 2.99
+    else:
+        fee = 0
+    tax = (subtotal + fee) * 0.07
+    total = subtotal + fee + tax
+    subtotal = "{0:.2f}".format(subtotal)
+    fee = "{0:.2f}".format(fee)
+    tax = "{0:.2f}".format(tax)
+    total = "{0:.2f}".format(total)
+    return render_template('cart.html', items=items, subtotal=subtotal,
+                           fee=fee, tax=tax, total=total)
 
 
 #######################

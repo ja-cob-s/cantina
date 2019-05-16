@@ -3,7 +3,7 @@
 
     <div class="jumbotron jumbotron-fluid">
         <div class="container">
-            <h1 class="display-4">Cantina De Santiago</h1>
+            <h1 class="display-4">Checkout</h1>
         </div>
     </div>
 
@@ -30,11 +30,23 @@
                 <li class="list-group-item list-group-item-action flex-column align-items-start">
                     <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">{{i.name}}</h5>
-                    {{i.price}}
+                    ${{i.price}}
                     </div>
-                    <p class="mb-1">Quantity: {{i.quantity}}</p>
-                    <a href=# class="btn btn-primary btn-sm">Edit</a>
-                    <a href=# class="btn btn-danger btn-sm">Delete</a>
+                    <p class="mb-1">
+                        <form action="{{ url_for('update_cart', menu_id=i.menu_item_id)}}" method = 'POST'>
+                            <div class="form-group">
+                                <dl>
+                                    <dt><label for="quantity">Quantity</label></dt>
+                                    <dd>
+                                        <input type='text' size='1' name='quantity' value = '{{i.quantity}}' required>
+                                        <input type='submit' value='Update' class='btn btn-primary btn-sm'>
+                                        <a href="{{url_for('remove_from_cart', menu_id=i.menu_item_id)}}" class="btn btn-danger btn-sm">Delete</a>
+                                    </dd>
+                                </dl>
+                                
+                            </div>
+                        </form>
+                    </p>
                 </li>
             {% endfor %}
         </ul>
@@ -42,6 +54,10 @@
         {% else %}
             <p> You currently have no items. </p>
         {% endif %}
+        <p>Subtotal: ${{subtotal}}</p>
+        <p>Delivery Fee: ${{fee}}</p>
+        <p>Tax (7%): ${{tax}}</p>
+        <p>Total: ${{total}}</p>
         <p><a href={{ url_for('show_menu')}}>Back to menu</a></p>
     </div>
 
