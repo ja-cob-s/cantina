@@ -22,9 +22,24 @@
             {% endif %}
             
         {% endwith %}
+
+        {% if user %}
+
+            <form action="{{ url_for('update_address')}}" method = 'POST'>
+                <div class="form-group"><div class="col-3">
+                    <label for="address">Delivery Address:</label><br/>
+                    <textarea name="address" class="form-control-plaintext" rows="2" placeholder='Enter address here'>{% if user.address %}{{user.address}}{% endif %}</textarea><br/>
+                    <input type='submit' value='Save Address' class='btn btn-primary btn-sm'>
+                </div></div>
+            </form>
+
+            <p>
+                Estimated delivery time: {{ delivery_time }}
+            </p>
+
+        {% endif %}
         
         {% if items %}
-
         <ul class="list-group">
             {% for i in items %}
                 <li class="list-group-item list-group-item-action flex-column align-items-start">
@@ -50,7 +65,6 @@
                 </li>
             {% endfor %}
         </ul>
-
         {% else %}
             <p> You currently have no items. </p>
         {% endif %}
@@ -58,6 +72,7 @@
         <p>Delivery Fee: ${{fee}}</p>
         <p>Tax (7%): ${{tax}}</p>
         <p>Total: ${{total}}</p>
+        <a href={{ url_for('place_order')}} class="btn btn-primary btn">Place Order</a>
         <p><a href={{ url_for('show_menu')}}>Back to menu</a></p>
     </div>
 
