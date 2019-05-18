@@ -25,6 +25,24 @@
             
         {% if items %}
             
+            <h2>Most Popular Items</h2>
+            <div class="card-columns">
+            {% for i in top_items %}
+
+                <div class="card border-dark mb-3" style="max-width: 18rem;">
+                    <div class="card-header">{{i.name}}</div>
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
+                        <p class="card-text">${{i.price}}</p>
+                    </div>
+                    <div class="card-footer" align="right">
+                        <a href={{ url_for('add_to_cart', menu_id=i.menu_item_id) }} class="btn btn-primary btn-sm">Add</a>
+                    </div>
+                </div>
+
+            {% endfor %}
+            </div>
+
             <h2>Appetizers</h2>
             <div class="card-columns">
             {% for i in items %}
@@ -34,7 +52,7 @@
                         <div class="card-header">{{i.name}}</div>
                         <div class="card-body">
                             <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                            <p class="card-text">{{i.price}}</p>
+                            <p class="card-text">${{i.price}}</p>
                         </div>
                         <div class="card-footer" align="right">
                             <a href={{ url_for('add_to_cart', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
@@ -54,7 +72,7 @@
                         <div class="card-header">{{i.name}}</div>
                         <div class="card-body">
                             <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                            <p class="card-text">{{i.price}}</p>
+                            <p class="card-text">${{i.price}}</p>
                         </div>
                         <div class="card-footer" align="right">
                             <a href={{ url_for('add_to_cart', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
@@ -74,7 +92,7 @@
                         <div class="card-header">{{i.name}}</div>
                         <div class="card-body">
                             <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                            <p class="card-text">{{i.price}}</p>
+                            <p class="card-text">${{i.price}}</p>
                         </div>
                         <div class="card-footer" align="right">
                             <a href={{ url_for('add_to_cart', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>
@@ -94,7 +112,7 @@
                         <div class="card-header">{{i.name}}</div>
                         <div class="card-body">
                             <h6 class="card-subtitle mb-2 text-muted">{{i.description}}</h6>
-                            <p class="card-text">{{i.price}}</p>
+                            <p class="card-text">${{i.price}}</p>
                         </div>
                         <div class="card-footer" align="right">
                             <a href={{ url_for('add_to_cart', menu_id=i.id) }} class="btn btn-primary btn-sm">Add</a>

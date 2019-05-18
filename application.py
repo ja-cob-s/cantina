@@ -7,7 +7,7 @@ from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, User, MenuItem, Order, OrderItem
-from database_setup import Cart, CartView
+from database_setup import Cart, CartView, TopItemView
 from flask_login import login_user, logout_user, current_user
 from flask_login import login_required, LoginManager
 from werkzeug.urls import url_parse
@@ -21,7 +21,7 @@ login.login_view = 'show_login'
 
 DELIVERY_FEE = 2.99
 RESTAURANT_ADDRESS = '13020 Livingston Rd, Naples, FL 34105'
-APP_KEY = 'AIzaSyAlmemzptHQOxsvsq3H_jlTGrM4A1nLnMQ'
+APP_KEY = open('gmaps_api_key.txt', 'r').read()
 MAX_DELIVERY_DISTANCE = 32187  # Distance in meters, roughly equals 20 miles
 
 
@@ -250,12 +250,18 @@ def place_order():
     if not items:
         flash("No items in order!")
         return redirect(url_for('show_cart'))
+    # Make sure customer's address is valid
+    destination = current_user.address
+    if validate_address(destination) is False:
+        flash("Address is invalid or outside delivery radius!")
+        return redirect(url_for('show_cart'))
     # Create new entry in order table
     order_time = datetime.datetime.now()
     delivery_time = order_time + datetime.timedelta(0,get_delivery_time())
-    order = Order(user_id=user_id, order_time=order_time,
-                  delivery_time=delivery_time)
-    session.add(order)
+    new_order = Order(user_id=user_id, order_time=order_time,
+                      delivery_time=delivery_time)
+    session.add(new_order)
+    order = session.query(Order).filter_by(order_time=order_time).one()
     # Add each item to order_item table and remove from cart
     for i in items:
         order_item = OrderItem(order_id=order.id, menu_item_id=i.menu_item_id,
@@ -263,13 +269,11 @@ def place_order():
         session.add(order_item)
         session.delete(i)
     session.commit()
-    delivery_time = str(get_delivery_time()/60) + ' minutes'
+    # Convert delivery time to EST and format for display
+    delivery_time = delivery_time - datetime.timedelta(hours=4)
+    delivery_time = delivery_time.strftime('%I:%M %p')
     # Form URL for delivery map
     origin = RESTAURANT_ADDRESS.replace(' ', '+')
-    destination = current_user.address
-    if validate_address(destination) is False:
-        flash("Address is invalid or outside delivery radius!")
-        return redirect(url_for('show_cart'))
     destination = destination.replace(' ', '+')
     destination = destination.replace('\r\n', '+')
     destination = destination.replace('\r', '+')
@@ -345,16 +349,22 @@ def show_menu():
     """ Display main menu page"""
     session = connect()
     items = session.query(MenuItem).all()
+    top_items = session.query(TopItemView).all()
+    # Customers and those not logged in should see publicMenu
+    # while admins should see adminMenu
     try:
         if current_user.admin:
-            return render_template('menu.html', items=items)
+            return render_template('adminMenu.html', items=items,
+                                   top_items=top_items)
         else:
-            return render_template('publicMenu.html', items=items)
+            return render_template('publicMenu.html', items=items,
+                                   top_items=top_items)
     except AttributeError:
-        return render_template('publicMenu.html', items=items)
+        return render_template('publicMenu.html', items=items,
+                               top_items=top_items)
 
 
-@app.route('/menu/new', methods=['GET', 'POST'])
+@app.route('/admin/new', methods=['GET', 'POST'])
 @login_required
 def new_menu_item():
     """ Display page to create new menu item"""
@@ -372,7 +382,7 @@ def new_menu_item():
         return render_template('newMenuItem.html')
 
 
-@app.route('/menu/<int:menu_id>/edit', methods=['GET', 'POST'])
+@app.route('/admin/edit/<int:menu_id>', methods=['GET', 'POST'])
 @login_required
 def edit_menu_item(menu_id):
     """ Display page to edit an existing menu item"""
@@ -398,7 +408,7 @@ def edit_menu_item(menu_id):
         return render_template('editMenuItem.html', menu_id=menu_id, item=item)
 
 
-@app.route('/menu/<int:menu_id>/delete', methods=['GET', 'POST'])
+@app.route('/admin/delete/<int:menu_id>', methods=['GET', 'POST'])
 @login_required
 def delete_menu_item(menu_id):
     """ Display page to delete an existing menu item"""
@@ -412,6 +422,29 @@ def delete_menu_item(menu_id):
     else:
         return render_template('deleteMenuItem.html', menu_id=menu_id,
                                item=item)
+
+
+######################################
+# Administrative Dashboard Functions #
+######################################
+@app.route('/admin/dashboard')
+@login_required
+def show_dashboard():
+    """ Display the administrative dashboard which provides analytic
+        data such as most popular items, busiest times, and top locations
+        of customers
+    """
+    # Must be admin to view this page
+    try:
+        if not current_user.admin:
+            flash("You don't have permission to view this page.")
+            return redirect(url_for('show_menu'))
+    except AttributeError:
+        flash("Error determining user privledges.")
+        return redirect(url_for('show_menu'))
+    session = connect()
+    top_items = session.query(TopItemView).all()
+    return render_template('dashboard.html', top_items=top_items)
 
 
 if __name__ == '__main__':

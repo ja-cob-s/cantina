@@ -129,5 +129,24 @@ class CartView(Base):
         }
 
 
+class TopItemView(Base):
+    __tablename__ = 'top_item_view'
+    menu_item_id = Column(Integer, primary_key=True)
+    name = Column(String(80))
+    description = Column(String(250))
+    price = Column(String(8))
+    quantity = Column(Integer)
+
+    @property
+    def serialize(self):
+        # Returns object data in easily serializeable format
+        return {
+            'menu_item_id': self.menu_item_id,
+            'name': self.name,
+            'description': self.description,
+            'price': self.price,
+            'quantity': self.quantity,
+        }
+
 engine = create_engine('sqlite:///cantinadesantiago.db')
 Base.metadata.create_all(engine)

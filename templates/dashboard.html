@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+    <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">Administrative Dashboard</h1>
+        </div>
+    </div>
+
+    {% if top_items %}
+        <h2>Most Popular Items</h2>
+        <ul class="list-group">
+            {% for i in top_items %}
+                <li class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{i.name}}</h5>
+                    Times Ordered: {{i.quantity}}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p> You currently have no popular items. </p>
+    {% endif %}
+
+
+{% endblock %}
