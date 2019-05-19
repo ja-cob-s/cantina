@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
-from database_setup import Base, User
+from models import Base, User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 

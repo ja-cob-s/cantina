@@ -6,13 +6,17 @@ from flask import flash, jsonify, make_response
 from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, User, MenuItem, Order, OrderItem
-from database_setup import Cart, CartView, TopItemView
+from models import Base, User, MenuItem, Order, OrderView
+from models import OrderItem, Address, Cart, TopItemView
+from models import CartView, DayOfWeekView, TimeOfDayView, ZipCodeView
 from flask_login import login_user, logout_user, current_user
 from flask_login import login_required, LoginManager
 from werkzeug.urls import url_parse
 from forms import LoginForm, RegistrationForm
-import json, urllib2, datetime
+from collections import OrderedDict
+import json
+import urllib2
+import datetime
 
 app = Flask(__name__)
 login = LoginManager(app)
@@ -32,6 +36,25 @@ def connect():
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     return session
+
+
+###########################
+# JSON Endpoint Functions #
+###########################
+@app.route('/menu/JSON')
+def restaurant_menu_json():
+    """ Returns list of menu items in JSON format"""
+    session = connect()
+    items = session.query(MenuItem).all()
+    return jsonify(MenuItems=[i.serialize for i in items])
+
+
+@app.route('/menu/<int:menu_id>/JSON')
+def menu_item_json(menu_id):
+    """ Returns one menu item in JSON format"""
+    session = connect()
+    item = session.query(MenuItem).filter_by(id=menu_id).one()
+    return jsonify(MenuItem=item.serialize)
 
 
 #################################
@@ -89,23 +112,93 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-###########################
-# JSON Endpoint Functions #
-###########################
-@app.route('/menu/JSON')
-def restaurant_menu_json():
-    """ Returns list of menu items in JSON format"""
+#####################
+# Address Functions #
+#####################
+@app.route('/cart/update_address', methods=['GET', 'POST'])
+@login_required
+def update_address():
+    """ Update the user's address"""
     session = connect()
-    items = session.query(MenuItem).all()
-    return jsonify(MenuItems=[i.serialize for i in items])
+    try:
+        user = load_user(current_user.id)
+        address = get_address(user.address_id)
+    except AttributeError:
+        return 'Error getting user data'
+    if address is None:
+        address = Address()
+    if request.method == 'POST':
+        if request.form['street_1']:
+            address.street_1 = request.form['street_1']
+        if request.form['street_2']:
+            address.street_2 = request.form['street_2']
+        if request.form['city']:
+            address.city = request.form['city']
+        if request.form['state']:
+            address.state = request.form['state']
+        if request.form['zip_code']:
+            address.zip_code = request.form['zip_code']
+        address_string = get_address_string(address)
+        if validate_address(address_string) is False:
+            flash("Address is invalid or outside delivery radius!")
+            return redirect(url_for('cart_edit_address'))
+        address = session.add(address)
+        user.address_id = get_address_id(address)
+        user = session.merge(user)
+        flash("Address saved!")
+        session.commit()
+    return redirect(url_for('show_cart'))
 
 
-@app.route('/menu/<int:menu_id>/JSON')
-def menu_item_json(menu_id):
-    """ Returns one menu item in JSON format"""
+def get_address(address_id):
+    """ Returns an address object given the address id"""
     session = connect()
-    item = session.query(MenuItem).filter_by(id=menu_id).one()
-    return jsonify(MenuItem=item.serialize)
+    address = session.query(Address).filter_by(id=address_id).one_or_none()
+    return address
+
+
+def get_address_id(address):
+    """ Returns an address id given an address object"""
+    session = connect()
+    address_id = session.query(Address).filter_by(street_1=address.street_1,
+        street_2=address.street_2, city=address.city, state=address.state,
+        zip_code=address.zip_code).one_or_none()
+    return address_id
+
+
+def get_address_string(address):
+    """ Returns the string of address given the address object"""
+    try:
+        if address.street_1 is not None:
+            address_string = address.street_1
+            address_string += "\n"
+        if address.street_2 is not None:
+            address_string += address.street_2
+            address_string += "\n"
+        if address.city is not None:
+            address_string += address.city
+            address_string += " "
+        if address.state is not None:
+            address_string += address.state
+            address_string += " "
+        if address.zip_code is not None:
+            address_string += address.zip_code
+        return address_string
+    except AttributeError:
+        return None
+
+def validate_address(address_string):
+    """ Validates the address string
+        Returns true if valid, false if not
+    """
+    # User has no address saved
+    if address_string is None:
+        return False
+    # User is outside delivery radius
+    if get_travel_distance(address_string) > MAX_DELIVERY_DISTANCE:
+        return False
+    # If none of the above cases returned false, the address is okay
+    return True
 
 
 ######################
@@ -180,9 +273,11 @@ def show_cart():
     session = connect()
     try:
         user_id = current_user.id
+        address = get_address(current_user.address_id)
     except AttributeError:
-        return "Error getting user ID"
+        return "Error getting user data"
     items = session.query(CartView).filter_by(user_id=user_id).all()
+    # Calculate totals
     subtotal = 0.0
     for item in items:
         subtotal += float(item.price) * item.quantity
@@ -196,43 +291,55 @@ def show_cart():
     fee = "{0:.2f}".format(fee)
     tax = "{0:.2f}".format(tax)
     total = "{0:.2f}".format(total)
-    delivery_time = str(get_delivery_time()/60) + ' minutes'
-    return render_template('cart.html', items=items, subtotal=subtotal,
-                           fee=fee, tax=tax, total=total, user=current_user,
-                           delivery_time=delivery_time)
-
-
-@app.route('/cart/update_address', methods=['GET', 'POST'])
-@login_required
-def update_address():
-    """ Update the user's address"""
-    session = connect()
-    user = load_user(current_user.id)
-    if request.method == 'POST':
-        if request.form['address']:
-            address = request.form['address']
-            if validate_address(address) is False:
-                flash("Address is invalid or outside delivery radius!")
-                return redirect(url_for('show_cart'))
-            user.address = address
-            user = session.merge(user)
-            flash("Address saved!")
-            session.commit()
-    return redirect(url_for('show_cart'))
-
-
-def validate_address(address):
-    """ Validates the address string
-        Returns true if valid, false if not
-    """
-    # User has no address saved
     if address is None:
-        return False
-    # User is outside delivery radius
-    if get_travel_distance(address) > MAX_DELIVERY_DISTANCE:
-        return False
-    # If none of the above cases returned false, the address is okay
-    return True
+        delivery_time = 'Please enter an address to '
+        delivery_time += 'calculate estimated delivery time.'
+        address_string = 'No address on file.'
+    else:
+        delivery_time = 'Your estimated delivery time is currently '
+        delivery_time += str(get_delivery_time()/60) + ' minutes.'
+        address_string = get_address_string(address)
+    return render_template('cart.html', items=items, subtotal=subtotal,
+        fee=fee, tax=tax, total=total, user=current_user,
+        address_string=address_string, delivery_time=delivery_time)
+
+
+@app.route('/cart/edit_address', methods=['GET', 'POST'])
+@login_required
+def cart_edit_address():
+    """ Display the contents of the user's cart
+        with editable address fields
+    """
+    session = connect()
+    try:
+        user_id = current_user.id
+        address = get_address(current_user.address_id)
+    except AttributeError:
+        return "Error getting user data"
+    items = session.query(CartView).filter_by(user_id=user_id).all()
+    # Calculate totals
+    subtotal = 0.0
+    for item in items:
+        subtotal += float(item.price) * item.quantity
+    if subtotal > 0:
+        fee = DELIVERY_FEE
+    else:
+        fee = 0
+    tax = (subtotal + fee) * 0.07
+    total = subtotal + fee + tax
+    subtotal = "{0:.2f}".format(subtotal)
+    fee = "{0:.2f}".format(fee)
+    tax = "{0:.2f}".format(tax)
+    total = "{0:.2f}".format(total)
+    if address is None:
+        delivery_time = 'Please enter an address to '
+        delivery_time += 'calculate estimated delivery time.'
+    else:
+        delivery_time = 'Your estimated delivery time is currently '
+        delivery_time += str(get_delivery_time()/60) + ' minutes.'
+    return render_template('cartEditAddress.html', items=items, subtotal=subtotal,
+        fee=fee, tax=tax, total=total, user=current_user,
+        address=address, delivery_time=delivery_time)
 
 
 @app.route('/cart/order_placed')
@@ -251,13 +358,14 @@ def place_order():
         flash("No items in order!")
         return redirect(url_for('show_cart'))
     # Make sure customer's address is valid
-    destination = current_user.address
+    address = get_address(current_user.address_id)
+    destination = get_address_string(address)
     if validate_address(destination) is False:
         flash("Address is invalid or outside delivery radius!")
         return redirect(url_for('show_cart'))
     # Create new entry in order table
     order_time = datetime.datetime.now()
-    delivery_time = order_time + datetime.timedelta(0,get_delivery_time())
+    delivery_time = order_time + datetime.timedelta(0, get_delivery_time())
     new_order = Order(user_id=user_id, order_time=order_time,
                       delivery_time=delivery_time)
     session.add(new_order)
@@ -269,15 +377,27 @@ def place_order():
         session.add(order_item)
         session.delete(i)
     session.commit()
+    ordered_items = session.query(OrderView).filter_by(order_id=order.id).all()
+    # Calculate totals
+    subtotal = 0.0
+    for item in ordered_items:
+        subtotal += float(item.price) * item.quantity
+    if subtotal > 0:
+        fee = DELIVERY_FEE
+    else:
+        fee = 0
+    tax = (subtotal + fee) * 0.07
+    total = subtotal + fee + tax
+    subtotal = "{0:.2f}".format(subtotal)
+    fee = "{0:.2f}".format(fee)
+    tax = "{0:.2f}".format(tax)
+    total = "{0:.2f}".format(total)
     # Convert delivery time to EST and format for display
     delivery_time = delivery_time - datetime.timedelta(hours=4)
     delivery_time = delivery_time.strftime('%I:%M %p')
     # Form URL for delivery map
-    origin = RESTAURANT_ADDRESS.replace(' ', '+')
-    destination = destination.replace(' ', '+')
-    destination = destination.replace('\r\n', '+')
-    destination = destination.replace('\r', '+')
-    destination = destination.replace('\n', '+')
+    origin = encode_string(RESTAURANT_ADDRESS)
+    destination = encode_string(destination)
     map_url = 'https://www.google.com/maps/embed/v1/directions?origin='
     map_url += origin
     map_url += '&destination='
@@ -285,19 +405,33 @@ def place_order():
     map_url += '&key='
     map_url += APP_KEY
     return render_template('orderComplete.html', delivery_time=delivery_time,
-                           map_url=map_url)
+                           items=ordered_items, subtotal=subtotal, fee=fee,
+                           tax=tax, total=total, map_url=map_url)
 
 
 ######################
 # Delivery Functions #
 ######################
+def encode_string(input_string):
+    """ Encodes a string (such as an address) for use in
+        Google Maps API URLs
+    """
+    input_string = input_string.replace('%', '%25')
+    input_string = input_string.replace('"', '%22')
+    input_string = input_string.replace('<', '%3C')
+    input_string = input_string.replace('>', '%3E')
+    input_string = input_string.replace('#', '%23')
+    input_string = input_string.replace('|', '%7C')
+    input_string = input_string.replace(' ', '%20')
+    input_string = input_string.replace('\r\n', '%20')
+    input_string = input_string.replace('\r', '%20')
+    input_string = input_string.replace('\n', '%20')
+    return input_string
+
 def get_travel_data(destination):
     """ Returns JSON travel data"""
-    origin = RESTAURANT_ADDRESS.replace(' ', '+')
-    destination = destination.replace(' ', '+')
-    destination = destination.replace('\r\n', '+')
-    destination = destination.replace('\r', '+')
-    destination = destination.replace('\n', '+')
+    origin = encode_string(RESTAURANT_ADDRESS)
+    destination = encode_string(destination)
     url = 'https://maps.googleapis.com/maps/api/directions/json?origin='
     url += origin
     url += '&destination='
@@ -305,7 +439,9 @@ def get_travel_data(destination):
     url += '&mode=driving&key='
     url += APP_KEY
     travel_data = json.load(urllib2.urlopen(url))
+    # print(url)  # Test only
     return travel_data
+
 
 def get_travel_time(destination):
     """ Returns travel time in seconds between restaurant
@@ -324,16 +460,18 @@ def get_travel_distance(destination):
 
 
 def get_prep_time():
-    #TODO
+    # TODO
     return 1200
 
 
 def get_delivery_time():
-    """ The delivery time is the combination of 
+    """ The delivery time is the combination of
         the prep time and the travel time
     """
     try:
-        delivery_time = get_travel_time(current_user.address)
+        address = get_address(current_user.address_id)
+        address_string = get_address_string(address)
+        delivery_time = get_travel_time(address_string)
         delivery_time += get_prep_time()
         return delivery_time
     except AttributeError:
@@ -444,7 +582,32 @@ def show_dashboard():
         return redirect(url_for('show_menu'))
     session = connect()
     top_items = session.query(TopItemView).all()
-    return render_template('dashboard.html', top_items=top_items)
+    days_of_week = session.query(DayOfWeekView).all()
+    times_of_day = session.query(TimeOfDayView).all()
+    times_dict = get_formatted_time_of_day(times_of_day)
+    zip_codes = session.query(ZipCodeView).all()
+    return render_template('dashboard.html', top_items=top_items,
+        days_of_week=days_of_week, times_of_day=times_dict,
+        zip_codes=zip_codes)
+
+
+def get_formatted_time_of_day(times_of_day):
+    """ SQLite returns the times in 24-hour format
+        Change into 12-hour AM/PM format for easy viewing
+    """
+    times_dict = OrderedDict()
+    for row in times_of_day:
+        key = int(row.time_of_day)
+        value = row.quantity
+        if key >= 12:
+            ampm = ' PM'
+        else:
+            ampm = ' AM'
+        if not key == 12:
+            key = key % 12
+        key = str(key) + ampm
+        times_dict[key] = value
+    return times_dict
 
 
 if __name__ == '__main__':

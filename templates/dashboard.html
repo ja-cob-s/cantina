@@ -23,5 +23,53 @@
         <p> You currently have no popular items. </p>
     {% endif %}
 
+    {% if days_of_week %}
+        <h2>Busiest Days of the Week</h2>
+        <ul class="list-group">
+            {% for d in days_of_week %}
+                <li class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{d.day_of_week}}</h5>
+                    Orders on This Day: {{d.quantity}}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p> You currently have no orders for the week. </p>
+    {% endif %}
+
+    {% if times_of_day %}
+        <h2>Busiest Times of the Day</h2>
+        <ul class="list-group">
+            {% for key, value in times_of_day.items() %}
+                <li class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{key}}</h5>
+                    Orders During This Hour: {{value}}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p> You currently have no orders for the week. </p>
+    {% endif %}
+
+    {% if zip_codes %}
+        <h2>Most Popular Zip Codes</h2>
+        <ul class="list-group">
+            {% for z in zip_codes %}
+                <li class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{z.zip_code}}</h5>
+                    Orders from Zip Code: {{z.quantity}}
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p> You currently have no orders. </p>
+    {% endif %}
+
 
 {% endblock %}
