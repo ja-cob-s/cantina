@@ -6,6 +6,7 @@ from flask import flash, jsonify, make_response
 from flask import session as login_session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from models import Base, User, MenuItem, Order, OrderView
 from models import OrderItem, Address, Cart, TopItemView
 from models import CartView, DayOfWeekView, TimeOfDayView, ZipCodeView
@@ -17,8 +18,11 @@ from collections import OrderedDict
 import json
 import urllib2
 import datetime
+import os
 
-app = Flask(__name__)
+application = Flask(__name__)
+app = application
+app.secret_key = os.urandom(24)
 login = LoginManager(app)
 login.login_view = 'show_login'
 
@@ -297,7 +301,7 @@ def show_cart():
         address_string = 'No address on file.'
     else:
         delivery_time = 'Your estimated delivery time is currently '
-        delivery_time += str(get_delivery_time()/60) + ' minutes.'
+        delivery_time += '{0:.0f}'.format(get_delivery_time()/60) + ' minutes.'
         address_string = get_address_string(address)
     return render_template('cart.html', items=items, subtotal=subtotal,
         fee=fee, tax=tax, total=total, user=current_user,
@@ -336,7 +340,7 @@ def cart_edit_address():
         delivery_time += 'calculate estimated delivery time.'
     else:
         delivery_time = 'Your estimated delivery time is currently '
-        delivery_time += str(get_delivery_time()/60) + ' minutes.'
+        delivery_time += '{0:.0f}'.format(get_delivery_time()/60) + ' minutes.'
     return render_template('cartEditAddress.html', items=items, subtotal=subtotal,
         fee=fee, tax=tax, total=total, user=current_user,
         address=address, delivery_time=delivery_time)
@@ -460,8 +464,18 @@ def get_travel_distance(destination):
 
 
 def get_prep_time():
-    # TODO
-    return 1200
+    """ Returns prep time based on user load"""
+    session = connect()
+    base_time = 1200
+    prep_time = base_time
+    times_of_day = session.query(TimeOfDayView).all()
+    current_time = datetime.datetime.now().strftime('%H')
+    for row in times_of_day:
+        if current_time == row.time_of_day:
+            """ Prep time is 20% longer for every 
+            three customers served concurrently"""
+            prep_time += prep_time * (row.quantity / 3) * .2
+    return prep_time
 
 
 def get_delivery_time():
@@ -611,6 +625,6 @@ def get_formatted_time_of_day(times_of_day):
 
 
 if __name__ == '__main__':
-    app.secret_key = 'super_secret_key'
+    # app.secret_key = 'super_secret_key'
     app.debug = True
     app.run(host='0.0.0.0', port=5000)
