@@ -1,0 +1,16 @@
+<div class="card bg-light mt-5" style="max-width: 18rem;">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-8">
+                <h5><strong>{{i.name}}</strong></h5>
+            </div>
+            <div class="col" align="right">
+                <a href={{ url_for('add_to_cart', menu_id=i.id) }} class="btn btn-secondary btn-sm" >Add</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <h6 class="card-subtitle mb-2">{{i.description}}</h6>
+        <p class="card-text" align="right">${{i.price}}</p>
+    </div>
+</div>

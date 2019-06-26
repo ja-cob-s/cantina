@@ -1,21 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <div class="jumbotron jumbotron-fluid">
-        <div class="container">
-            <h1 class="display-4">Delete {{item.name}}</h1>
-            <p class="lead">Are you sure?</p>
+<div class="text-left">
+    <p>Are you sure?</p>
+    <form action="{{url_for('delete_menu_item', menu_id=item.id)}}" method = 'POST'>
+        <div class="form-group">
+            <input type='submit' value='Delete' class='btn btn-success'>
+            <a href='{{url_for('show_menu')}}' class="btn btn-danger">Cancel</a>
         </div>
-    </div>
 
-    <div class = 'pane'>
+    </form>
+</div>
 
-        <form action="{{url_for('delete_menu_item', menu_id=item.id)}}" method = 'POST'>
-            <div class="form-group">
-                <input type='submit' value='Delete' class='btn btn-primary'>
-                <a href='{{url_for('show_menu')}}' class="btn btn-danger">Cancel</a>
-            </div>
-
-        </form>
-    </div>
 {% endblock %}

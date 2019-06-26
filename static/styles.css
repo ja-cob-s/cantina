@@ -3,7 +3,8 @@
     float:left;
 }
 
-.text {
+text {
+    font-family:"Serif";
     left: 0;
     position:absolute;
     text-align:center;
@@ -12,8 +13,53 @@
 }
 
 h1 {
+    font-size: 96px;
+}
+
+#title {
+    background-image:url('banner.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
     color: white;
     font-family:"Serif";
-    font-size: 72px;
     text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+#title a {
+    color:white;
+}
+
+#top-items {
+    background-image:url('0_top_items.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
+    min-height: 500px;
+}
+
+#appetizers {
+    background-image:url('1_appetizers.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
+    min-height: 500px;
+}
+
+#entrees {
+    background-image:url('2_entrees.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
+    min-height: 1000px;
+}
+
+#desserts {
+    background-image:url('3_desserts.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
+    min-height: 500px;
+}
+
+#drinks {
+    background-image:url('4_drinks.jpg');
+    background-repeat: no-repeat;
+    background-position: center; 
+    min-height: 500px;
 }

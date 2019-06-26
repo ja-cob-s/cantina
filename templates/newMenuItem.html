@@ -1,50 +1,43 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <div class="jumbotron jumbotron-fluid">
-        <div class="container">
-            <h1 class="display-4">New Menu Item</h1>
+<div class="text-left">
+    <form action="{{url_for('new_menu_item')}}" method = 'POST'>
+        <div class="form-group">
+            <dl>
+                <dt><label for="name">Name</label></dt>
+                    <dd><input type='text' size='30' name='name'></dd>
+                <dt><label for="description">Description</label></dt>
+                    <dd><textarea name ='description' rows='5' cols='40'></textarea></dd>
+                <dt><label for="price">Price</label></dt>
+                    <dd><input type ='text' size ='8' name='price'></dd>
+                
+                    <dd>
+                        <input type ='radio' name='course' id='2' value='Appetizer'>
+                        <label for='2'>Appetizer</label>
+                    </dd>
+
+                    <dd>
+                        <input type ='radio' name='course' id='4' value='Entree' checked>
+                        <label for='4'>Entree</label>
+                    </dd>
+
+                    <dd>
+                        <input type ='radio' name='course' id='6' value='Dessert'>
+                        <label for='6'>Dessert</label>
+                    </dd>
+
+                    <dd>
+                        <input type ='radio' name='course' id='8' value='Drink'>
+                        <label for='8'>Drink</label>
+                    </dd>
+
+            </dl>
+            <input type='submit' value='Create' class='btn btn-success'>
+            <a href='{{url_for('show_menu')}}' class="btn btn-danger">Cancel</a>
         </div>
-    </div>
 
-    <div class = 'pane'>
-
-        <form action="{{url_for('new_menu_item')}}" method = 'POST'>
-            <div class="form-group">
-                <dl>
-                    <dt><label for="name">Name</label></dt>
-                        <dd><input type='text' size='30' name='name'></dd>
-                    <dt><label for="description">Description</label></dt>
-                        <dd><textarea name ='description' rows='5' cols='40'></textarea></dd>
-                    <dt><label for="price">Price</label></dt>
-                        <dd><input type ='text' size ='8' name='price'></dd>
-                    
-                        <dd>
-                            <input type ='radio' name='course' id='2' value='Appetizer'>
-                            <label for='2'>Appetizer</label>
-                        </dd>
-
-                        <dd>
-                            <input type ='radio' name='course' id='4' value='Entree' checked>
-                            <label for='4'>Entree</label>
-                        </dd>
-
-                        <dd>
-                            <input type ='radio' name='course' id='6' value='Dessert'>
-                            <label for='6'>Dessert</label>
-                        </dd>
-
-                        <dd>
-                            <input type ='radio' name='course' id='8' value='Drink'>
-                            <label for='8'>Drink</label>
-                        </dd>
-
-                </dl>
-                <input type='submit' value='Create' class='btn btn-primary'>
-                <a href='{{url_for('show_menu')}}' class="btn btn-danger">Cancel</a>
-            </div>
-
-        </form>
-    </div>
+    </form>
+</div>
 
 {% endblock %}

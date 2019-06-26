@@ -305,7 +305,8 @@ def show_cart():
         address_string = get_address_string(address)
     return render_template('cart.html', items=items, subtotal=subtotal,
         fee=fee, tax=tax, total=total, user=current_user,
-        address_string=address_string, delivery_time=delivery_time)
+        address_string=address_string, delivery_time=delivery_time,
+        edit_address=False, title="Checkout")
 
 
 @app.route('/cart/edit_address', methods=['GET', 'POST'])
@@ -341,9 +342,9 @@ def cart_edit_address():
     else:
         delivery_time = 'Your estimated delivery time is currently '
         delivery_time += '{0:.0f}'.format(get_delivery_time()/60) + ' minutes.'
-    return render_template('cartEditAddress.html', items=items, subtotal=subtotal,
-        fee=fee, tax=tax, total=total, user=current_user,
-        address=address, delivery_time=delivery_time)
+    return render_template('cart.html', items=items, subtotal=subtotal,
+        fee=fee, tax=tax, total=total, user=current_user, address=address, 
+        delivery_time=delivery_time, edit_address=True, title="Checkout")
 
 
 @app.route('/cart/order_placed')
@@ -410,7 +411,8 @@ def place_order():
     map_url += APP_KEY
     return render_template('orderComplete.html', delivery_time=delivery_time,
                            items=ordered_items, subtotal=subtotal, fee=fee,
-                           tax=tax, total=total, map_url=map_url)
+                           tax=tax, total=total, map_url=map_url,
+                           title="Order Complete")
 
 
 ######################
@@ -502,18 +504,19 @@ def show_menu():
     session = connect()
     items = session.query(MenuItem).all()
     top_items = session.query(TopItemView).all()
+    title = "Cantina De Santiago"
     # Customers and those not logged in should see publicMenu
     # while admins should see adminMenu
     try:
         if current_user.admin:
             return render_template('adminMenu.html', items=items,
-                                   top_items=top_items)
+                                   top_items=top_items, title=title)
         else:
             return render_template('publicMenu.html', items=items,
-                                   top_items=top_items)
+                                   top_items=top_items, title=title)
     except AttributeError:
         return render_template('publicMenu.html', items=items,
-                               top_items=top_items)
+                               top_items=top_items, title=title)
 
 
 @app.route('/admin/new', methods=['GET', 'POST'])
@@ -531,7 +534,7 @@ def new_menu_item():
         flash("New menu item '%s' created!" % newItem.name)
         return redirect(url_for('show_menu'))
     else:
-        return render_template('newMenuItem.html')
+        return render_template('newMenuItem.html', title="New Menu Item")
 
 
 @app.route('/admin/edit/<int:menu_id>', methods=['GET', 'POST'])
@@ -540,6 +543,7 @@ def edit_menu_item(menu_id):
     """ Display page to edit an existing menu item"""
     session = connect()
     item = session.query(MenuItem).filter_by(id=menu_id).one()
+    title = 'Editing ' + item.name
     if request.method == 'POST':
         if request.form['name']:
             item.name = request.form['name']
@@ -557,7 +561,8 @@ def edit_menu_item(menu_id):
         session.commit()
         return redirect(url_for('show_menu'))
     else:
-        return render_template('editMenuItem.html', menu_id=menu_id, item=item)
+        return render_template('editMenuItem.html', menu_id=menu_id, item=item,
+                               title=title)
 
 
 @app.route('/admin/delete/<int:menu_id>', methods=['GET', 'POST'])
@@ -566,6 +571,7 @@ def delete_menu_item(menu_id):
     """ Display page to delete an existing menu item"""
     session = connect()
     item = session.query(MenuItem).filter_by(id=menu_id).one()
+    title = "Delete " + item.name
     if request.method == 'POST':
         session.delete(item)
         session.commit()
@@ -573,7 +579,7 @@ def delete_menu_item(menu_id):
         return redirect(url_for('show_menu'))
     else:
         return render_template('deleteMenuItem.html', menu_id=menu_id,
-                               item=item)
+                               item=item, title=title)
 
 
 ######################################
@@ -602,7 +608,7 @@ def show_dashboard():
     zip_codes = session.query(ZipCodeView).all()
     return render_template('dashboard.html', top_items=top_items,
         days_of_week=days_of_week, times_of_day=times_dict,
-        zip_codes=zip_codes)
+        zip_codes=zip_codes, title="Administrative Dashboard")
 
 
 def get_formatted_time_of_day(times_of_day):
@@ -619,6 +625,8 @@ def get_formatted_time_of_day(times_of_day):
             ampm = ' AM'
         if not key == 12:
             key = key % 12
+        if key == 0:
+            key = 12
         key = str(key) + ampm
         times_dict[key] = value
     return times_dict

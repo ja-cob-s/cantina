@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <div class="jumbotron jumbotron-fluid">
-        <div class="container">
-            <h1 class="display-4">Administrative Dashboard</h1>
-        </div>
-    </div>
-
     {% if top_items %}
         <h2>Most Popular Items</h2>
         <ul class="list-group">
@@ -70,6 +64,6 @@
     {% else %}
         <p> You currently have no orders. </p>
     {% endif %}
-
+</div>
 
 {% endblock %}

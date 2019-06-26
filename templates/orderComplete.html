@@ -1,13 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-    <div class="jumbotron jumbotron-fluid">
-        <div class="container">
-            <h1 class="display-4">Order Complete</h1>
-        </div>
-    </div>
-
-    <div class = 'pane'>
         Thank you for your order!<br/>
         We estimate your order will be delivered at {{delivery_time}}<br/>
         Please have your payment method ready when the driver arrives.
@@ -35,4 +28,6 @@
         <p>Tax (7%): ${{tax}}</p>
         <p>Total: ${{total}}</p>
         <p><a href={{ url_for('show_menu')}}>Back to menu</a></p>
+</div>
+
 {% endblock %}

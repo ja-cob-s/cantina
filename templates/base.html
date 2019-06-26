@@ -7,41 +7,63 @@
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+
+        {% if title %}
+            {% if title == 'Cantina De Santiago' %}
+                <title>Cantina De Santiago</title>
+            {% else %}
+                <title>{{ title }} - Cantina De Santiago</title>
+            {% endif %}
+        {% else %}
+            <title>Cantina De Santiago</title>
+        {% endif %}
     </head>
     <body>
-        <div id="outer">
-            <!-- Begin Navbar -->
-            <div id="inner_fixed">
-                <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-                    <a class="navbar-brand" href='{{url_for('show_menu')}}'>Cantina De Santiago</a>
-                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="collapse navbar-collapse" id="navbarText">
-                        <ul class="navbar-nav mr-auto">
-                        </ul>
-                        <ul class="navbar-nav">
-                            {% if current_user.is_anonymous %}
-                                <a class="nav-link active" href='{{url_for('show_login')}}'>Log In</a>
-                                <li class="nav-item">
-                                    <a class="nav-link" href='{{url_for('show_cart')}}'>Checkout</a>
-                                </li>
-                            {% else %}
-                                <li class="nav-item">
-                                    <a class="nav-link" href='{{url_for('logout')}}'>Log Out</a>
-                                </li>
-                                <li class="nav-item active">
-                                    <a class="nav-link" href='{{url_for('show_cart')}}'>Checkout</a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-                </nav>
+        <div id="outer" style="background-color: #f8f5ee; font-family:'Serif';">
+            
+            <!-- Begin Title -->
+            <div id="title" class="jumbotron text-center" style="background-color: #f8f5ee;">
+                <h1><strong>{{ title }}</strong></h1>
+                  <p class="lead"><h3><strong>
+                    <a href='{{url_for('show_menu')}}'>Menu</a> | 
+                    {% if current_user.is_anonymous %}
+                    <a href='{{url_for('show_login')}}'>Log In</a> | 
+                    {% else %}
+                    <a href='{{url_for('logout')}}'>Log Out</a> | 
+                    {% endif %}
+                    <a href='{{url_for('show_cart')}}'>Checkout</a>
+                  </p></h4></strong>
             </div>
-            <!-- End Navbar -->
+            <!-- End Title -->
 
+            <div class='container text-center'>    
+
+                <!-- Begin Messages -->
+                {% with messages = get_flashed_messages() %}
+                
+                    {% if messages %}
+                    <div class="alert alert-dark" role="alert">
+                        <ul>
+                        {% for message in messages %}
+                        <li><strong>{{message}}</strong></li>
+                        {% endfor %}
+                        </ul>
+                    </div> 
+                    {% endif %}
+                    
+                {% endwith %}
+                <!-- End Messages -->
+
+            <!-- Begin Main Content -->
             {% block content %}
-			{% endblock %}
+            {% endblock %}
+            <!-- End Main Content -->
+            </div>
         </div>
+
+        
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     </body>
 </html>
