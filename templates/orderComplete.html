@@ -7,6 +7,7 @@
         <p>
             <iframe width="600" height="450" frameborder="0" style="border:0" src={{map_url}} allowfullscreen></iframe>
         </p>
+        <div class="text-left">
         {% if items %}
         <h3>Items in Order</h3>
         <ul class="list-group">
@@ -28,6 +29,7 @@
         <p>Tax (7%): ${{tax}}</p>
         <p>Total: ${{total}}</p>
         <p><a href={{ url_for('show_menu')}}>Back to menu</a></p>
+        </div>
 </div>
 
 {% endblock %}

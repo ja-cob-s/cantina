@@ -1,11 +1,6 @@
 {% extends "base.html" %}
 {% block content %}            
 
-    <h4>
-    <a href={{ url_for('new_menu_item') }}>Create New Item</a> | 
-    <a href={{ url_for('show_dashboard') }}>View Dashboard</a>
-    </h4>
-
     {% if items %}
     <div class="col-md-13">
         <h2>Most Popular Items</h2>

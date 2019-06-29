@@ -23,15 +23,31 @@
             
             <!-- Begin Title -->
             <div id="title" class="jumbotron text-center" style="background-color: #f8f5ee;">
-                <h1><strong>{{ title }}</strong></h1>
-                  <p class="lead"><h3><strong>
+                <h1><strong>Cantina De Santiago</strong></h1>
+                  <p class="lead"><h2><strong>
+                    {% if title %}
+                    {% if title == 'Cantina De Santiago' %}
+                        Menu
+                    {% else %}
+                        {{ title }}
+                    {% endif %}
+                {% endif %}
+                  </strong></h3></p>
+                  <p><h4><strong>
                     <a href='{{url_for('show_menu')}}'>Menu</a> | 
                     {% if current_user.is_anonymous %}
                     <a href='{{url_for('show_login')}}'>Log In</a> | 
                     {% else %}
                     <a href='{{url_for('logout')}}'>Log Out</a> | 
                     {% endif %}
+                    {% if current_user.is_anonymous %}
                     <a href='{{url_for('show_cart')}}'>Checkout</a>
+                    {% elif current_user.admin %}
+                    <a href={{ url_for('new_menu_item') }}>Create New Item</a> | 
+                    <a href={{ url_for('show_dashboard') }}>View Dashboard</a>
+                    {% else %}
+                    <a href='{{url_for('show_cart')}}'>Checkout</a>
+                    {% endif %}
                   </p></h4></strong>
             </div>
             <!-- End Title -->
